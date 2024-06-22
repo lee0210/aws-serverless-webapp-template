@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+
+Resources:
+  MenuTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: 'menu'
+      AttributeDefinitions:
+        - AttributeName: 'Id'
+          AttributeType: 'S'
+      KeySchema:
+        - AttributeName: 'Id'
+          KeyType: 'HASH'
+      BillingMode: 'PAY_PER_REQUEST'
+      OnDemandThroughput:
+        MaxReadRequestUnits: 1
+        MaxWriteRequestUnits: 1
+
+  OrderTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: 'order'
+      AttributeDefinitions:
+        - AttributeName: 'Id'
+          AttributeType: 'S'
+      KeySchema:
+        - AttributeName: 'Id'
+          KeyType: 'HASH'
+      BillingMode: 'PAY_PER_REQUEST'
+      OnDemandThroughput:
+        MaxReadRequestUnits: 1
+        MaxWriteRequestUnits: 1
+  Menu:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: src/menu/index.handler
+      Runtime: nodejs18.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MenuTable
+      Events:
+        BackendApi:
+          Type: Api
+          Properties:
+            Path: /menu
+            Method: any
+      Environment:
+        Variables:
+          ENV: !Ref EnvName
+          DYNAMODB_ENDPOINT: !Ref DynamoDBEndpoint
+
+  Order:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: src/order/index.handler
+      Runtime: nodejs18.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrderTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MenuTable
+      Events:
+        BackendApi:
+          Type: Api
+          Properties:
+            Path: /order
+            Method: any
+      Environment:
+        Variables:
+          ENV: !Ref EnvName
+          DYNAMODB_ENDPOINT: !Ref DynamoDBEndpoint
+
+
+Parameters:
+  EnvName:
+    Type: String
+    Default: 'local'
+  DynamoDBEndpoint:
+    Type: String
+    Default: 'http://dynamodb-local:8000'
